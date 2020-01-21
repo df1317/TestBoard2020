@@ -4,25 +4,25 @@ package frc.robot;
 //imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Joystick;
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.TimeUnit;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.*;
-import com.analog.adis16448.frc.*;
+//import com.analog.adis16448.frc.*;
 //for some reason, com.analog.adis16448.* seems to prevent the build from being successful
-import edu.wpi.first.wpilibj.Relay;
-import edu.wpi.first.wpilibj.Sendable;
-import edu.wpi.first.wpilibj.Spark;
-import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.wpilibj.Compressor;
-import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.DoubleSolenoid;
+//import edu.wpi.first.wpilibj.Relay;
+//import edu.wpi.first.wpilibj.Sendable;
+//import edu.wpi.first.wpilibj.Spark;
+//import edu.wpi.first.cameraserver.CameraServer;
+//import edu.wpi.first.wpilibj.Compressor;
+//import edu.wpi.first.wpilibj.DigitalInput;
+//import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+//import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.vision.VisionThread;
-import com.ctre.phoenix.motorcontrol.InvertType;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
+//import edu.wpi.first.vision.VisionThread;
+//import com.ctre.phoenix.motorcontrol.InvertType;
+//import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.revrobotics.*;
 import edu.wpi.first.wpilibj.util.Color;
 
@@ -62,10 +62,13 @@ public class Robot extends TimedRobot {
 	boolean joyETRigger;
 	double ExtraVal;
 	double TestVal;
-	boolean joyEAddTop;
+	boolean joyERunColorWheel;
 	boolean joyEResetColorWheel;
 	boolean joyEAddBottom;
 	boolean joyESubractBottom;
+	boolean joyEEndgame;
+
+
 
 	//Additional Values
 	double TopMotorVal;
@@ -73,11 +76,16 @@ public class Robot extends TimedRobot {
 	double ColorMotorVal;
 	Color currentColor;
 	int color;
+	int fieldColor;
 	int endgameColor;
 	int halfRotation;
 	boolean endRotation;
 	boolean allRotationsDone;
 	String gameData;
+	boolean endColorR;
+	boolean endColorG;
+	boolean endColorY;
+	boolean endColorB;
 
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
@@ -87,75 +95,99 @@ public class Robot extends TimedRobot {
 		halfRotation = 0;
 		allRotationsDone = false;
 		color = 0;
+		fieldColor = 0;
 		m_colorMatcher.addColorMatch(kBlueTarget);
 		m_colorMatcher.addColorMatch(kGreenTarget);
 		m_colorMatcher.addColorMatch(kRedTarget);
 		m_colorMatcher.addColorMatch(kYellowTarget);
+		boolean endColorB = false;
+		boolean endColorG = false;
+		boolean endColorY = false;
+		boolean endColorR = false;
 
 	}
 
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
 
-		gameData = DriverStation.getInstance().getGameSpecificMessage();
-		
-		currentColor = colorSensor.getColor();
-		if (gameData == "R") {
-			endgameColor = 1;
-		}
-		if (gameData == "G") {
-			endgameColor = 2;
-		}
-		if (gameData == "B") {
-			endgameColor = 3;
-		}
-		if (gameData == "Y") {
-			endgameColor = 4;
-		}
-
-		String colorString;
-		final ColorMatchResult match = m_colorMatcher.matchClosestColor(currentColor);
-	
-		if (match.color == kGreenTarget) {
-		  colorString = "Green";
-		  color = 2;
-		} else if (match.color == kYellowTarget) {
-		  colorString = "Yellow";
-		  color = 4;
-		  endRotation = true;
-		} else if (match.color == kBlueTarget) {
-		  colorString = "Blue";
-		  color = 3;
-		} else if (match.color == kRedTarget) {
-		colorString = "Red";
-		color = 1;
-		} else {
-			colorString = "Unknown";
-			color = 0;
-		  }
-
-		if (color == 1 && endRotation == true) {
-			halfRotation = halfRotation + 1;
-			endRotation = false;
-		}
-
 		//get joystick values and buttons and such
 		ExtraVal = joyE.getY();
 		TestVal = joyL.getY();
 		joyETRigger = joyE.getRawButton(1);
-		joyEAddTop = joyE.getRawButtonPressed(5);
+		joyERunColorWheel = joyE.getRawButtonPressed(5);
 		joyEResetColorWheel = joyE.getRawButtonPressed(3);
+		joyEEndgame = joyE.getRawButton(2);
 		//joyEAddBottom = joyE.getRawButtonPressed(6);
 		//joyESubractBottom = joyE.getRawButtonPressed(4);
 		TopMotorVal = ExtraVal;
 		BottomMotorVal = ExtraVal;
 		ColorMotorVal = 0.5;
+
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		
+		currentColor = colorSensor.getColor();
+		if (gameData == "R") {
+			endgameColor = 1;
+			endColorR = true;
+		}
+		if (gameData == "G") {
+			endgameColor = 2;
+			endColorG = true;
+		}
+		if (gameData == "B") {
+			endgameColor = 3;
+			endColorB = true;
+		}
+		if (gameData == "Y") {
+			endgameColor = 4;
+			endColorY = true;
+		} 
+
+
+		String colorString;
+		final ColorMatchResult match = m_colorMatcher.matchClosestColor(currentColor);
+
+	/*
+		4 is yellow
+		3 is blue
+		2 is green
+		1 is red	
+					*/
+	
+		if (match.color == kGreenTarget) {
+		  colorString = "Green";
+		  color = 2;
+		  fieldColor = 4;
+		  endRotation = true;
+		} else if (match.color == kYellowTarget) {
+		  colorString = "Yellow";
+		  color = 4;
+		  fieldColor = 2;
+		} else if (match.color == kBlueTarget) {
+		  colorString = "Blue";
+		  color = 3;
+		  fieldColor = 1;
+		} else if (match.color == kRedTarget) {
+		colorString = "Red";
+		color = 1;
+		fieldColor = 3;
+		} else {
+			colorString = "Unknown";
+			color = 0;
+			fieldColor = 0;
+		  }
+
+		if (fieldColor == 1 && endRotation == true) {
+			halfRotation = halfRotation + 1;
+			endRotation = false;
+		}
 			
     	SmartDashboard.putNumber("Confidence", match.confidence);
 		SmartDashboard.putString("Detected Color", colorString);
 		SmartDashboard.putNumber("LeftMostJoystick", ExtraVal);
 		SmartDashboard.putNumber("TopVal", TopMotorVal);
 		SmartDashboard.putNumber("BottomVal", BottomMotorVal);
+		SmartDashboard.putNumber("Endgame Color 1R 2G 3B 4Y", endgameColor);
 		System.out.println("Test thingy" + TopMotor);
 
 		//if the trigger is pressed, run the motors
@@ -172,7 +204,7 @@ public class Robot extends TimedRobot {
 			allRotationsDone = true;
 		}
 
-		if (joyEAddTop == true && allRotationsDone == false) {
+		if (joyERunColorWheel == true && allRotationsDone == false) {
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
 		}
 		if (joyEResetColorWheel == true) {
@@ -180,6 +212,20 @@ public class Robot extends TimedRobot {
 			halfRotation = 0;
 		}
 
+		//endgame color wheel, Jonathan's design, Erin's execution.
+		// :D
+		if (joyEEndgame == true && endColorR == true && fieldColor != 1) {
+			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
+		} 
+		if (joyEEndgame == true && endColorY == true && fieldColor != 4) {
+			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
+		}
+		if (joyEEndgame == true && endColorB == true && fieldColor != 3) {
+			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
+		}
+		if (joyEEndgame == true && endColorG == true && fieldColor != 2) {
+			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
+		}
 
 /* old/unused code
 
