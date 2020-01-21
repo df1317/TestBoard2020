@@ -16,6 +16,7 @@ import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -62,7 +63,7 @@ public class Robot extends TimedRobot {
 	double ExtraVal;
 	double TestVal;
 	boolean joyEAddTop;
-	boolean joyESubtractTop;
+	boolean joyEResetColorWheel;
 	boolean joyEAddBottom;
 	boolean joyESubractBottom;
 
@@ -72,15 +73,20 @@ public class Robot extends TimedRobot {
 	double ColorMotorVal;
 	Color currentColor;
 	int color;
+	int endgameColor;
 	int halfRotation;
 	boolean endRotation;
 	boolean allRotationsDone;
-	
+	String gameData;
+
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
 	
 		TopMotorVal = 0;
 		BottomMotorVal = 0;
+		halfRotation = 0;
+		allRotationsDone = false;
+		color = 0;
 		m_colorMatcher.addColorMatch(kBlueTarget);
 		m_colorMatcher.addColorMatch(kGreenTarget);
 		m_colorMatcher.addColorMatch(kRedTarget);
@@ -90,8 +96,22 @@ public class Robot extends TimedRobot {
 
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
+
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
 		
 		currentColor = colorSensor.getColor();
+		if (gameData == "R") {
+			endgameColor = 1;
+		}
+		if (gameData == "G") {
+			endgameColor = 2;
+		}
+		if (gameData == "B") {
+			endgameColor = 3;
+		}
+		if (gameData == "Y") {
+			endgameColor = 4;
+		}
 
 		String colorString;
 		final ColorMatchResult match = m_colorMatcher.matchClosestColor(currentColor);
@@ -124,22 +144,12 @@ public class Robot extends TimedRobot {
 		TestVal = joyL.getY();
 		joyETRigger = joyE.getRawButton(1);
 		joyEAddTop = joyE.getRawButtonPressed(5);
-		//joyESubtractTop = joyE.getRawButtonPressed(3);
+		joyEResetColorWheel = joyE.getRawButtonPressed(3);
 		//joyEAddBottom = joyE.getRawButtonPressed(6);
 		//joyESubractBottom = joyE.getRawButtonPressed(4);
 		TopMotorVal = ExtraVal;
 		BottomMotorVal = ExtraVal;
 		ColorMotorVal = 0.5;
-		//previously Top was + and Bottom was -, but I swapped it for testing purposes
-
-		//adding/subtracting from TopmotorVal with WPI_TalonSRX apposed to normal
-	/*	if (joyEAddTop == true) {
-			TopMotorVal = TopMotorVal + 0.05;
-		}
-		if (joyESubtractTop == true) {
-			TopMotorVal = TopMotorVal -0.05;
-		}
-			*/
 			
     	SmartDashboard.putNumber("Confidence", match.confidence);
 		SmartDashboard.putString("Detected Color", colorString);
@@ -147,18 +157,6 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("TopVal", TopMotorVal);
 		SmartDashboard.putNumber("BottomVal", BottomMotorVal);
 		System.out.println("Test thingy" + TopMotor);
-		//SmartDashboard.putNumber("TopMotor", TopMotor);
-
-
-
-
-	/*	if (joyEAddBottom == true) {
-			BottomMotorVal = BottomMotorVal + 0.05;
-		}
-		if (joyESubractBottom == true) {
-			BottomMotorVal = BottomMotorVal - 0.05;
-		}
-		TopMotor.set(ExtraVal); */
 
 		//if the trigger is pressed, run the motors
 		if (joyETRigger == true) {
@@ -176,6 +174,10 @@ public class Robot extends TimedRobot {
 
 		if (joyEAddTop == true && allRotationsDone == false) {
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
+		}
+		if (joyEResetColorWheel == true) {
+			allRotationsDone = false;
+			halfRotation = 0;
 		}
 
 
