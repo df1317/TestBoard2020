@@ -4,9 +4,7 @@ package frc.robot;
 //imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Joystick;
-
 import java.util.concurrent.TimeUnit;
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.*;
 import com.analog.adis16448.frc.*;
@@ -14,12 +12,14 @@ import com.analog.adis16448.frc.*;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.Sendable;
 import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.vision.VisionThread;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.revrobotics.*;
@@ -27,8 +27,8 @@ import edu.wpi.first.wpilibj.util.Color;
 
 
 
-
 public class Robot extends TimedRobot {
+
 	
 
 //_______________Declarations_______________
@@ -42,6 +42,7 @@ public class Robot extends TimedRobot {
 	//Talon declaration (WPI)
 	WPI_TalonSRX TopMotor = new WPI_TalonSRX(4);
 	WPI_TalonSRX BottomMotor = new WPI_TalonSRX(3);
+	WPI_TalonSRX ColorMotor = new WPI_TalonSRX(5);
 
 	//Color Sensor Declaration/Values
 	ColorSensorV3 colorSensor = new ColorSensorV3(i2cPort);
@@ -68,20 +69,18 @@ public class Robot extends TimedRobot {
 	//Additional Values
 	double TopMotorVal;
 	double BottomMotorVal;
-
+	double ColorMotorVal;
 	Color currentColor;
+	int color;
+	int halfRotation;
+	boolean endRotation;
+	boolean allRotationsDone;
 	
-	// boolean endRotation
-	// int halfRotation
-	// int colorNumber
-
-
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
-
+	
 		TopMotorVal = 0;
 		BottomMotorVal = 0;
-
 		m_colorMatcher.addColorMatch(kBlueTarget);
 		m_colorMatcher.addColorMatch(kGreenTarget);
 		m_colorMatcher.addColorMatch(kRedTarget);
@@ -91,34 +90,46 @@ public class Robot extends TimedRobot {
 
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
-
+		
 		currentColor = colorSensor.getColor();
 
 		String colorString;
-		ColorMatchResult match = m_colorMatcher.matchClosestColor(currentColor);
+		final ColorMatchResult match = m_colorMatcher.matchClosestColor(currentColor);
 	
 		if (match.color == kGreenTarget) {
 		  colorString = "Green";
+		  color = 2;
 		} else if (match.color == kYellowTarget) {
 		  colorString = "Yellow";
+		  color = 4;
+		  endRotation = true;
 		} else if (match.color == kBlueTarget) {
 		  colorString = "Blue";
+		  color = 3;
 		} else if (match.color == kRedTarget) {
 		colorString = "Red";
+		color = 1;
 		} else {
 			colorString = "Unknown";
+			color = 0;
 		  }
+
+		if (color == 1 && endRotation == true) {
+			halfRotation = halfRotation + 1;
+			endRotation = false;
+		}
 
 		//get joystick values and buttons and such
 		ExtraVal = joyE.getY();
 		TestVal = joyL.getY();
 		joyETRigger = joyE.getRawButton(1);
-		//joyEAddTop = joyE.getRawButtonPressed(5);
+		joyEAddTop = joyE.getRawButtonPressed(5);
 		//joyESubtractTop = joyE.getRawButtonPressed(3);
 		//joyEAddBottom = joyE.getRawButtonPressed(6);
 		//joyESubractBottom = joyE.getRawButtonPressed(4);
 		TopMotorVal = ExtraVal;
 		BottomMotorVal = ExtraVal;
+		ColorMotorVal = 0.5;
 		//previously Top was + and Bottom was -, but I swapped it for testing purposes
 
 		//adding/subtracting from TopmotorVal with WPI_TalonSRX apposed to normal
@@ -158,6 +169,14 @@ public class Robot extends TimedRobot {
 			TopMotor.set(ControlMode.PercentOutput, 0);
 			BottomMotor.set(ControlMode.PercentOutput, 0);
 		} 
+
+		if (halfRotation == 7) {
+			allRotationsDone = true;
+		}
+
+		if (joyEAddTop == true && allRotationsDone == false) {
+			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
+		}
 
 
 /* old/unused code
