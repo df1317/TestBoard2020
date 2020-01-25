@@ -3,6 +3,7 @@ package frc.robot;
 
 //imports
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.Joystick;
 //import java.util.concurrent.TimeUnit;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -12,7 +13,7 @@ import com.ctre.phoenix.motorcontrol.can.*;
 //import edu.wpi.first.wpilibj.Relay;
 //import edu.wpi.first.wpilibj.Sendable;
 //import edu.wpi.first.wpilibj.Spark;
-//import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cameraserver.CameraServer;
 //import edu.wpi.first.wpilibj.Compressor;
 //import edu.wpi.first.wpilibj.DigitalInput;
 //import edu.wpi.first.wpilibj.DoubleSolenoid;
@@ -25,11 +26,10 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 //import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.revrobotics.*;
 import edu.wpi.first.wpilibj.util.Color;
-
-
+import edu.wpi.cscore.*;
+import edu.wpi.first.networktables.*;
 
 public class Robot extends TimedRobot {
-
 	
 
 //_______________Declarations_______________
@@ -41,9 +41,14 @@ public class Robot extends TimedRobot {
 	//TalonSRX BottomMotor = new TalonSRX(3);
 
 	//Talon declaration (WPI)
-	WPI_TalonSRX TopMotor = new WPI_TalonSRX(4);
-	WPI_TalonSRX BottomMotor = new WPI_TalonSRX(3);
+	WPI_TalonSRX FRMotor = new WPI_TalonSRX(1);
+	WPI_TalonSRX BRMotor = new WPI_TalonSRX(2);
+	WPI_TalonSRX FLMotor = new WPI_TalonSRX(3);
+	WPI_TalonSRX BLMotor = new WPI_TalonSRX(4);
 	WPI_TalonSRX ColorMotor = new WPI_TalonSRX(5);
+
+	
+	HttpCamera test = new HttpCamera("Name", "http://frcvision.local:1182/?action=stream");
 
 	//Color Sensor Declaration/Values
 	ColorSensorV3 colorSensor = new ColorSensorV3(i2cPort);
@@ -57,6 +62,7 @@ public class Robot extends TimedRobot {
 	//Joystick declarations
 	Joystick joyE = new Joystick(0);
 	Joystick joyL = new Joystick(1);
+	Joystick joyR = new Joystick(2);
 
 	//Joystick Function declarations
 	boolean joyETRigger;
@@ -89,7 +95,11 @@ public class Robot extends TimedRobot {
 
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
-	
+
+		CameraServer.getInstance().addCamera(test);
+		CameraServer.getInstance().startAutomaticCapture();
+		Shuffleboard.getTab("SmartDashboard").add(test);
+		Shuffleboard.update();
 		TopMotorVal = 0;
 		BottomMotorVal = 0;
 		halfRotation = 0;
@@ -111,20 +121,25 @@ public class Robot extends TimedRobot {
 	public void robotPeriodic() {
 
 		//get joystick values and buttons and such
-		ExtraVal = joyE.getY();
+		ExtraVal = joyR.getY();
 		TestVal = joyL.getY();
 		joyETRigger = joyE.getRawButton(1);
-		joyERunColorWheel = joyE.getRawButtonPressed(5);
+		joyERunColorWheel = joyE.getRawButton(5);
 		joyEResetColorWheel = joyE.getRawButtonPressed(3);
 		joyEEndgame = joyE.getRawButton(2);
 		//joyEAddBottom = joyE.getRawButtonPressed(6);
 		//joyESubractBottom = joyE.getRawButtonPressed(4);
-		TopMotorVal = ExtraVal;
-		BottomMotorVal = ExtraVal;
 		ColorMotorVal = 0.5;
+
+		//DrivTrain
+		FRMotor.set(ExtraVal);
+		BRMotor.set(ExtraVal);
+		FLMotor.set(-TestVal);
+		BLMotor.set(-TestVal);
 
 		gameData = DriverStation.getInstance().getGameSpecificMessage();
 		
+		//Color Detection Part 1
 		currentColor = colorSensor.getColor();
 		if (gameData == "R") {
 			endgameColor = 1;
@@ -142,8 +157,6 @@ public class Robot extends TimedRobot {
 			endgameColor = 4;
 			endColorY = true;
 		} 
-
-
 		String colorString;
 		final ColorMatchResult match = m_colorMatcher.matchClosestColor(currentColor);
 
@@ -154,6 +167,7 @@ public class Robot extends TimedRobot {
 		1 is red	
 					*/
 	
+		//Color Detection Part 2
 		if (match.color == kGreenTarget) {
 		  colorString = "Green";
 		  color = 2;
@@ -176,36 +190,17 @@ public class Robot extends TimedRobot {
 			color = 0;
 			fieldColor = 0;
 		  }
-
 		if (fieldColor == 1 && endRotation == true) {
 			halfRotation = halfRotation + 1;
 			endRotation = false;
-		}
-			
+		}	
     	SmartDashboard.putNumber("Confidence", match.confidence);
-		SmartDashboard.putString("Detected Color", colorString);
-		SmartDashboard.putNumber("LeftMostJoystick", ExtraVal);
-		SmartDashboard.putNumber("TopVal", TopMotorVal);
-		SmartDashboard.putNumber("BottomVal", BottomMotorVal);
-		SmartDashboard.putNumber("Endgame Color 1R 2G 3B 4Y", endgameColor);
-		System.out.println("Test thingy" + TopMotor);
+		SmartDashboard.putString("Detected Color", colorString);		
 
-		//if the trigger is pressed, run the motors
-	/*	if (joyETRigger == true) {
-			TopMotor.set(ControlMode.PercentOutput, TopMotorVal);
-			BottomMotor.set(ControlMode.PercentOutput, BottomMotorVal);
-		}
-		else {
-			TopMotor.set(ControlMode.PercentOutput, 0);
-			BottomMotor.set(ControlMode.PercentOutput, 0);
-		} */
-		TopMotor.set(joyE.getY());
-		BottomMotor.set(joyE.getY());
-
+		//Normal Color wheel
 		if (halfRotation == 7) {
 			allRotationsDone = true;
 		}
-
 		if (joyERunColorWheel == true && allRotationsDone == false) {
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
 		}
@@ -228,7 +223,6 @@ public class Robot extends TimedRobot {
 		if (joyEEndgame == true && endColorG == true && fieldColor != 2) {
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
 		}
-
 		System.out.println("color = " + color + (" field detected-color " + fieldColor + " half rotations" + halfRotation));
 		SmartDashboard.putNumber("color", color);
 		SmartDashboard.putNumber("field detected color", fieldColor);
