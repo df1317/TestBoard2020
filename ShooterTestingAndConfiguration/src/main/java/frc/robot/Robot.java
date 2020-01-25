@@ -191,14 +191,16 @@ public class Robot extends TimedRobot {
 		System.out.println("Test thingy" + TopMotor);
 
 		//if the trigger is pressed, run the motors
-		if (joyETRigger == true) {
+	/*	if (joyETRigger == true) {
 			TopMotor.set(ControlMode.PercentOutput, TopMotorVal);
 			BottomMotor.set(ControlMode.PercentOutput, BottomMotorVal);
 		}
 		else {
 			TopMotor.set(ControlMode.PercentOutput, 0);
 			BottomMotor.set(ControlMode.PercentOutput, 0);
-		} 
+		} */
+		TopMotor.set(joyE.getY());
+		BottomMotor.set(joyE.getY());
 
 		if (halfRotation == 7) {
 			allRotationsDone = true;
@@ -227,6 +229,11 @@ public class Robot extends TimedRobot {
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
 		}
 
+		System.out.println("color = " + color + (" field detected-color " + fieldColor + " half rotations" + halfRotation));
+		SmartDashboard.putNumber("color", color);
+		SmartDashboard.putNumber("field detected color", fieldColor);
+		SmartDashboard.putNumber("half rotations", halfRotation);
+		
 /* old/unused code
 
 		if (joyETRigger == false) {
