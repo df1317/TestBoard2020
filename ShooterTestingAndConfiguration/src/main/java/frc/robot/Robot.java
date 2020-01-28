@@ -4,6 +4,7 @@ package frc.robot;
 //imports
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorSensorV3;
@@ -13,6 +14,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.SPI;
 
 public class Robot extends TimedRobot {
 	
@@ -27,6 +29,7 @@ public class Robot extends TimedRobot {
 	WPI_TalonSRX ColorMotor = new WPI_TalonSRX(5);
 	I2C.Port i2cPort = I2C.Port.kOnboard;
 	ColorSensorV3 colorSensor = new ColorSensorV3(i2cPort);
+	AHRS ahrs;
 
 	//Color Sensor Declaration/Values
 	final Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
@@ -63,6 +66,12 @@ public class Robot extends TimedRobot {
 
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
+		try {
+            ahrs = new AHRS(SPI.Port.kMXP); 
+        } catch (RuntimeException ex ) {
+            DriverStation.reportError("Error instantiating navX MXP:  " + ex.getMessage(), true);
+		}
+		
 		m_colorMatcher.addColorMatch(kBlueTarget);
 		m_colorMatcher.addColorMatch(kGreenTarget);
 		m_colorMatcher.addColorMatch(kRedTarget);
@@ -71,6 +80,8 @@ public class Robot extends TimedRobot {
 
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
+		System.out.println(ahrs.getRoll());
+		
 		//get joystick values and buttons and such
 		RightVal = joyR.getY();
 		LeftVal = joyL.getY();
