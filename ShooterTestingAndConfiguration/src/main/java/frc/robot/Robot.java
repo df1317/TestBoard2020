@@ -1,17 +1,20 @@
 
 package frc.robot;
 
-//imports
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.Joystick;
 import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.can.*;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.revrobotics.ColorMatch;
+import com.revrobotics.ColorMatchResult;
+import com.revrobotics.ColorSensorV3;
+
 //import com.analog.adis16448.frc.*;
 //for some reason, com.analog.adis16448.* seems to prevent the build from being successful
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
+import edu.wpi.first.wpilibj.Joystick;
+//imports
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import com.revrobotics.*;
 import edu.wpi.first.wpilibj.util.Color;
 
 public class Robot extends TimedRobot {
@@ -19,32 +22,32 @@ public class Robot extends TimedRobot {
 
 //_______________Declarations_______________
 
-	I2C.Port i2cPort = I2C.Port.kOnboard;
-
-	//Talon declaration (WPI)
+	//Hardware Declarations
 	WPI_TalonSRX FRMotor = new WPI_TalonSRX(1);
 	WPI_TalonSRX BRMotor = new WPI_TalonSRX(2);
 	WPI_TalonSRX FLMotor = new WPI_TalonSRX(3);
 	WPI_TalonSRX BLMotor = new WPI_TalonSRX(4);
 	WPI_TalonSRX ColorMotor = new WPI_TalonSRX(5);
+	I2C.Port i2cPort = I2C.Port.kOnboard;
+	ColorSensorV3 colorSensor = new ColorSensorV3(i2cPort);
 
 	//Color Sensor Declaration/Values
-	ColorSensorV3 colorSensor = new ColorSensorV3(i2cPort);
+	final Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
+	final Color kGreenTarget = ColorMatch.makeColor(0.197, 0.561, 0.240);
+	final Color kRedTarget = ColorMatch.makeColor(0.561, 0.232, 0.114);
+  	final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 	ColorMatch m_colorMatcher = new ColorMatch();
-	Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
-  	Color kGreenTarget = ColorMatch.makeColor(0.197, 0.561, 0.240);
-  	Color kRedTarget = ColorMatch.makeColor(0.561, 0.232, 0.114);
-	Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
-	
+	ColorMatchResult match;
+	Color currentColor;
+	String colorString;
+
 	//Joystick declarations
 	Joystick joyE = new Joystick(0);
 	Joystick joyL = new Joystick(1);
 	Joystick joyR = new Joystick(2);
-
-	//Joystick Function declarations
 	boolean joyETRigger;
-	double ExtraVal;
-	double TestVal;
+	double RightVal;
+	double LeftVal;
 	boolean joyERunColorWheel;
 	boolean joyEResetColorWheel;
 	boolean joyEAddBottom;
@@ -52,149 +55,108 @@ public class Robot extends TimedRobot {
 	boolean joyEEndgame;
 
 	//Additional Values
-	double TopMotorVal;
-	double BottomMotorVal;
-	double ColorMotorVal;
-	Color currentColor;
-	int color;
-	int fieldColor;
+	double ColorMotorVal = 0.5;
+	int color = 0;
+	int fieldColor = 0;
 	int endgameColor;
-	int halfRotation;
+	int halfRotation = 0;
 	boolean endRotation;
-	boolean allRotationsDone;
+	boolean allRotationsDone = false;
 	String gameData;
-	boolean endColorR;
-	boolean endColorG;
-	boolean endColorY;
-	boolean endColorB;
 
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
-
-		TopMotorVal = 0;
-		BottomMotorVal = 0;
-		halfRotation = 0;
-		allRotationsDone = false;
-		color = 0;
-		fieldColor = 0;
 		m_colorMatcher.addColorMatch(kBlueTarget);
 		m_colorMatcher.addColorMatch(kGreenTarget);
 		m_colorMatcher.addColorMatch(kRedTarget);
 		m_colorMatcher.addColorMatch(kYellowTarget);
-		boolean endColorB = false;
-		boolean endColorG = false;
-		boolean endColorY = false;
-		boolean endColorR = false;
-
 	}
 
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
-
 		//get joystick values and buttons and such
-		ExtraVal = joyR.getY();
-		TestVal = joyL.getY();
+		RightVal = joyR.getY();
+		LeftVal = joyL.getY();
 		joyETRigger = joyE.getRawButton(1);
 		joyERunColorWheel = joyE.getRawButton(5);
 		joyEResetColorWheel = joyE.getRawButtonPressed(3);
 		joyEEndgame = joyE.getRawButton(2);
-		ColorMotorVal = 0.5;
 
 		//DriveTrain
-		FRMotor.set(ExtraVal);
-		BRMotor.set(ExtraVal);
-		FLMotor.set(-TestVal);
-		BLMotor.set(-TestVal);
+		FRMotor.set(RightVal);
+		BRMotor.set(RightVal);
+		FLMotor.set(-LeftVal);
+		BLMotor.set(-LeftVal);
 
+		//Classic endgame question of "what color do we need to get again???"
 		gameData = DriverStation.getInstance().getGameSpecificMessage();
-		
-		//Color Detection Part 1
+		if(gameData.length() > 0) {
+			switch (gameData.charAt(0))
+			{
+				case 'R': endgameColor = 1;
+					break;
+				case 'G': endgameColor = 2;
+					break;
+				case 'B': endgameColor = 3;
+					break;
+				case 'Y': endgameColor = 4;
+					break;
+				default:
+					break;
+			}
+		}
+		//Color Sensor functions
 		currentColor = colorSensor.getColor();
-		if (gameData == "R") {
-			endgameColor = 1;
-			endColorR = true;
-		}
-		if (gameData == "G") {
-			endgameColor = 2;
-			endColorG = true;
-		}
-		if (gameData == "B") {
-			endgameColor = 3;
-			endColorB = true;
-		}
-		if (gameData == "Y") {
-			endgameColor = 4;
-			endColorY = true;
-		} 
-		String colorString;
-		final ColorMatchResult match = m_colorMatcher.matchClosestColor(currentColor);
+		match = m_colorMatcher.matchClosestColor(currentColor);
 
-	/*
-		4 is yellow
-		3 is blue
-		2 is green
-		1 is red	
-					*/
-	
-		//Color Detection Part 2
 		if (match.color == kGreenTarget) {
-		  colorString = "Green";
-		  color = 2;
-		  fieldColor = 4;
-		  endRotation = true;
+			colorString = "Green";
+			color = 2;
+			endRotation = true;
 		} else if (match.color == kYellowTarget) {
-		  colorString = "Yellow";
-		  color = 4;
-		  fieldColor = 2;
+			colorString = "Yellow";
+			color = 4;
 		} else if (match.color == kBlueTarget) {
-		  colorString = "Blue";
-		  color = 3;
-		  fieldColor = 1;
+			colorString = "Blue";
+			color = 3;
 		} else if (match.color == kRedTarget) {
-		colorString = "Red";
-		color = 1;
-		fieldColor = 3;
+			colorString = "Red";
+			color = 1;
 		} else {
 			colorString = "Unknown";
 			color = 0;
 			fieldColor = 0;
-		  }
-		if (fieldColor == 1 && endRotation == true) {
+		}
+
+		if(color != 0) fieldColor = (color+2)%4;
+		
+		if (fieldColor == 1 && endRotation) {
 			halfRotation = halfRotation + 1;
 			endRotation = false;
 		}	
+
     	SmartDashboard.putNumber("Confidence", match.confidence);
 		SmartDashboard.putString("Detected Color", colorString);		
 
-		//Normal Color wheel
+		//Normal Color wheel functions
 		if (halfRotation == 7) {
 			allRotationsDone = true;
 		}
-		if (joyERunColorWheel == true && allRotationsDone == false) {
+
+		if (joyERunColorWheel  && !allRotationsDone) {
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
-		}
-		if (joyEResetColorWheel == true) {
-			allRotationsDone = false;
-			halfRotation = 0;
 		}
 
-		//endgame color wheel, Jonathan's design, Erin's execution.
+		if (joyEResetColorWheel) {
+			allRotationsDone = false;
+			halfRotation = 0;
+			endRotation = false;
+		}
+
+		//endgame color wheel, Jonathan's design, Erin's execution, and Jacob's incredible clean-up skillz.
 		// :D
-		if (joyEEndgame == true && endColorR == true && fieldColor != 1) {
-			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
-		} 
-		if (joyEEndgame == true && endColorY == true && fieldColor != 4) {
+		if(joyEEndgame && endgameColor != fieldColor){
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
 		}
-		if (joyEEndgame == true && endColorB == true && fieldColor != 3) {
-			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
-		}
-		if (joyEEndgame == true && endColorG == true && fieldColor != 2) {
-			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
-		}
-		System.out.println("color = " + color + (" field detected-color " + fieldColor + " half rotations" + halfRotation));
-		SmartDashboard.putNumber("color", color);
-		SmartDashboard.putNumber("field detected color", fieldColor);
-		SmartDashboard.putNumber("half rotations", halfRotation);
 	}
 }
