@@ -53,6 +53,7 @@ public class Robot extends TimedRobot {
 	boolean joyEAddBottom;
 	boolean joyESubractBottom;
 	boolean joyEEndgame;
+	boolean joyEResetGryo;
 
 	//Additional Values
 	double ColorMotorVal = 0.5;
@@ -64,6 +65,11 @@ public class Robot extends TimedRobot {
 	boolean allRotationsDone = false;
 	String gameData;
 
+	//Gyroscope declarations
+	double X;
+	double Y;
+	double Z;
+
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
 		try {
@@ -71,6 +77,8 @@ public class Robot extends TimedRobot {
         } catch (RuntimeException ex ) {
             DriverStation.reportError("Error instantiating navX MXP:  " + ex.getMessage(), true);
 		}
+		//assinging the values of XYZ for the gyroscope
+
 		
 		m_colorMatcher.addColorMatch(kBlueTarget);
 		m_colorMatcher.addColorMatch(kGreenTarget);
@@ -80,8 +88,15 @@ public class Robot extends TimedRobot {
 
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
-		System.out.println(ahrs.getRoll());
-		
+		X = ahrs.getRoll();
+		Y = ahrs.getPitch();
+		Z = ahrs.getYaw();
+		System.out.println(Z);
+		//In theory, the axis I labeled should be correct, but testing has shown that the gyro can easily lose it's calibration hence the reset button
+		if (joyEResetGryo) {
+			ahrs.reset();
+		}
+
 		//get joystick values and buttons and such
 		RightVal = joyR.getY();
 		LeftVal = joyL.getY();
@@ -89,6 +104,7 @@ public class Robot extends TimedRobot {
 		joyERunColorWheel = joyE.getRawButton(5);
 		joyEResetColorWheel = joyE.getRawButtonPressed(3);
 		joyEEndgame = joyE.getRawButton(2);
+		joyEResetGryo = joyE.getRawButton(6);
 
 		//DriveTrain
 		FRMotor.set(RightVal);
@@ -113,6 +129,7 @@ public class Robot extends TimedRobot {
 					break;
 			}
 		}
+
 		//Color Sensor functions
 		currentColor = colorSensor.getColor();
 		match = m_colorMatcher.matchClosestColor(currentColor);
