@@ -92,7 +92,7 @@ public class Robot extends TimedRobot {
 		Y = ahrs.getPitch();
 		Z = ahrs.getYaw();
 		System.out.println(Z);
-		//In theory, the axis I labeled should be correct, but testing has shown that the gyro can easily lose it's calibration hence the reset button
+		//In theory, the axis I labeled should be correct, but testing has shown that the gyro can easily lose it's calibration maybe idk
 		if (joyEResetGryo) {
 			ahrs.reset();
 		}
