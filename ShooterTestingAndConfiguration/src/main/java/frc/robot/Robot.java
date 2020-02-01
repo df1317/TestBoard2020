@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.Timer;
 
 public class Robot extends TimedRobot {
 	
@@ -70,8 +71,13 @@ public class Robot extends TimedRobot {
 	double Y;
 	double Z;
 
+	//time declarations
+	Timer timeTest = new Timer();
+
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
+		timeTest.start();
+
 		try {
             ahrs = new AHRS(SPI.Port.kMXP); 
         } catch (RuntimeException ex ) {
@@ -88,10 +94,12 @@ public class Robot extends TimedRobot {
 
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
+		System.out.println(timeTest.get());
+
+		//gyro
 		X = ahrs.getRoll();
 		Y = ahrs.getPitch();
 		Z = ahrs.getYaw();
-		System.out.println(Z);
 		//In theory, the axis I labeled should be correct, but testing has shown that the gyro can easily lose it's calibration maybe idk
 		if (joyEResetGryo) {
 			ahrs.reset();
@@ -109,8 +117,8 @@ public class Robot extends TimedRobot {
 		//DriveTrain
 		FRMotor.set(RightVal);
 		BRMotor.set(RightVal);
-		FLMotor.set(-LeftVal);
-		BLMotor.set(-LeftVal);
+		FLMotor.set(LeftVal);
+		BLMotor.set(LeftVal);
 
 		//Classic endgame question of "what color do we need to get again???"
 		gameData = DriverStation.getInstance().getGameSpecificMessage();
@@ -130,6 +138,9 @@ public class Robot extends TimedRobot {
 			}
 		}
 
+		if (joyEResetColorWheel) {
+			timeTest.reset();
+		}
 		//Color Sensor functions
 		currentColor = colorSensor.getColor();
 		match = m_colorMatcher.matchClosestColor(currentColor);
