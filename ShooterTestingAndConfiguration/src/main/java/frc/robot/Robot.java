@@ -3,7 +3,9 @@ package frc.robot;
 
 //imports
 import com.ctre.phoenix.motorcontrol.ControlMode;
+//import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+//import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorMatchResult;
@@ -17,12 +19,16 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.Timer;
+//import edu.wpi.first.wpilibj.Victor;
+//import edu.wpi.first.wpilibj.VictorSP;
 
 public class Robot extends TimedRobot {
 
 //_______________Declarations_______________
 
 	//Hardware Declarations
+	//note for the future, Victor is a part of the normal wpi, and the ctre library features the VictorSPX and the WPI_VictorSPX.
+	//(cont.) Most of the corresponding imports are above but are commented out.
 	WPI_TalonSRX FRMotor = new WPI_TalonSRX(1);
 	WPI_TalonSRX BRMotor = new WPI_TalonSRX(2);
 	WPI_TalonSRX FLMotor = new WPI_TalonSRX(3);
@@ -83,16 +89,11 @@ public class Robot extends TimedRobot {
 
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
-		timeTest.start();
-
 		try {
             ahrs = new AHRS(SPI.Port.kMXP); 
         } catch (RuntimeException ex ) {
             DriverStation.reportError("Error instantiating navX MXP:  " + ex.getMessage(), true);
 		}
-		//assinging the values of XYZ for the gyroscope
-
-		
 		m_colorMatcher.addColorMatch(kBlueTarget);
 		m_colorMatcher.addColorMatch(kGreenTarget);
 		m_colorMatcher.addColorMatch(kRedTarget);
@@ -143,7 +144,7 @@ public class Robot extends TimedRobot {
 			CollectionDoor.set(DoubleSolenoid.Value.kReverse);
 			SwifferPiston.set(DoubleSolenoid.Value.kReverse);
 			BeltMotor.set(-0.5);
-			System.out.println("Collecting from the human player")
+			System.out.println("Collecting from the human player");
 		}
 
 		//Ball shooter
