@@ -70,14 +70,15 @@ public class Robot extends TimedRobot {
 	boolean stationCollection;
 	boolean colorRotations;
 	boolean colorEndgame;
-	boolean toggleGearShift;
 	boolean gearShift;
+	boolean resetButton1;
+	boolean resetButton2;
 
 	//Additional Values
 	double ColorMotorVal = 0.5;
 	int color = 0;
 	int fieldColor = 0;
-	int endgameColor;
+	int endgameTargetColor;
 	int halfRotation = 0;
 	boolean endRotation;
 	boolean allRotationsDone = false;
@@ -122,6 +123,8 @@ public class Robot extends TimedRobot {
 		colorRotations = joyE.getRawButton(4);
 		colorEndgame = joyE.getRawButton(6);
 		gearShift = joyR.getRawButton(1);
+		resetButton1 = joyE.getRawButton(7);
+		resetButton2 = joyE.getRawButton(8);
 
 		
 		//DriveTrain
@@ -169,15 +172,15 @@ public class Robot extends TimedRobot {
 		if(gameData.length() > 0) {
 			switch (gameData.charAt(0))
 			{
-				case 'R': endgameColor = 1;
+				case 'R': endgameTargetColor = 1;
 					break;
-				case 'G': endgameColor = 2;
+				case 'G': endgameTargetColor = 2;
 					break;
-				case 'B': endgameColor = 3;
+				case 'B': endgameTargetColor = 3;
 					break;
-				case 'Y': endgameColor = 4;
+				case 'Y': endgameTargetColor = 4;
 					break;
-				default:
+				default: endgameTargetColor = 0;
 					break;
 			}
 		}
@@ -218,14 +221,14 @@ public class Robot extends TimedRobot {
 		if (colorRotations && !allRotationsDone) {
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
 		}
-	/*	if (joyEResetColorWheel) {
+		if (resetButton1) {
 			allRotationsDone = false;
 			halfRotation = 0;
 			endRotation = false;
-		} */
+		}
 
 		//endgame color wheel, Jonathan's design, Erin's execution, and Jacob's incredible clean-up skillz.
-		if(colorEndgame && endgameColor != fieldColor){
+		if(colorEndgame && endgameTargetColor!=fieldColor){
 			ColorMotor.set(ControlMode.PercentOutput, ColorMotorVal);
 		}
 	}
