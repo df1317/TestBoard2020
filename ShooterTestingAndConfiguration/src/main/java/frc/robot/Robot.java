@@ -3,9 +3,7 @@ package frc.robot;
 
 //imports
 import com.ctre.phoenix.motorcontrol.ControlMode;
-//import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-//import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorMatchResult;
@@ -14,21 +12,18 @@ import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
-import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.wpilibj.Timer;
-//import edu.wpi.first.wpilibj.Victor;
-//import edu.wpi.first.wpilibj.VictorSP;
 
 public class Robot extends TimedRobot {
 
 //_______________Declarations_______________
 
 	//Hardware Declarations
-	//note for the future, Victor is a part of the normal wpi, and the ctre library features the VictorSPX and the WPI_VictorSPX.
-	//(cont.) Most of the corresponding imports are above but are commented out.
 	WPI_TalonSRX FRMotor = new WPI_TalonSRX(1);
 	WPI_TalonSRX BRMotor = new WPI_TalonSRX(2);
 	WPI_TalonSRX FLMotor = new WPI_TalonSRX(3);
@@ -88,8 +83,12 @@ public class Robot extends TimedRobot {
 	double Y;
 	double Z;
 
+	public void autonomousInit() {
+		//valid auto init code here
+	}
 	// This function is called once at the beginning during operator control
 	public void robotInit() {
+
 		try {
             ahrs = new AHRS(SPI.Port.kMXP); 
         } catch (RuntimeException ex ) {
@@ -101,9 +100,12 @@ public class Robot extends TimedRobot {
 		m_colorMatcher.addColorMatch(kYellowTarget);
 	}
 
+	public void autonomousPeriodic() {
+		
+	}
+
 	// This function is called periodically during operator control
 	public void robotPeriodic() {
-		System.out.println(timeTest.get());
 
 		//gyro
 		X = ahrs.getRoll();
@@ -125,7 +127,6 @@ public class Robot extends TimedRobot {
 		gearShift = joyR.getRawButton(1);
 		resetButton1 = joyE.getRawButton(7);
 		resetButton2 = joyE.getRawButton(8);
-
 		
 		//DriveTrain
 		FRMotor.set(RightVal);
